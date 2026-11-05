@@ -90,6 +90,9 @@ app.UseCors(CorsPolicies.AngularClient);
 // and will move behind auth when the security phase lands.
 app.MapOpenApi();
 
+// Swagger UI renders the built-in OpenAPI document (no Swashbuckle generator involved).
+app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Payroll API v1"));
+
 // MVC controllers own the /api surface. MapControllers() publishes whatever [Route]s the
 // controllers declare -- changing a route in one place changes both routing and OpenAPI.
 app.MapControllers();

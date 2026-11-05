@@ -20,7 +20,10 @@ public sealed class BlobStorageOptions
     public const string Section = "Storage";
 
     /// <summary>"UseDevelopmentStorage=true" targets Azurite; an Azure connection string targets the cloud.</summary>
-    public string ConnectionString { get; set; } = "UseDevelopmentStorage=true";
+    public string ConnectionString { get; set; } = string.Empty;
+
+    /// <summary>Used with managed identity (DefaultAzureCredential) when ConnectionString is empty, e.g. "stpayrolltbgvkn".</summary>
+    public string AccountName { get; set; } = string.Empty;
 
     public string ContainerName { get; set; } = "payroll-uploads";
 }

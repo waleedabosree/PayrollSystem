@@ -11,8 +11,11 @@ public sealed class ServiceBusOptions
 {
     public const string Section = "ServiceBus";
 
-    /// <summary>Empty disables dispatching: batches then wait safely in the outbox.</summary>
+    /// <summary>Connection string wins; otherwise FullyQualifiedNamespace + managed identity. Both empty disables dispatching: batches then wait safely in the outbox.</summary>
     public string ConnectionString { get; set; } = string.Empty;
+
+    /// <summary>e.g. "sb-payroll-tbgvkn.servicebus.windows.net".</summary>
+    public string FullyQualifiedNamespace { get; set; } = string.Empty;
 
     public string QueueName { get; set; } = "payroll-jobs";
 
@@ -52,19 +55,23 @@ public sealed class OutboxDispatcher : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.ConnectionString))
+        var useConnectionString = !string.IsNullOrWhiteSpace(_options.ConnectionString);
+        if (!useConnectionString && string.IsNullOrWhiteSpace(_options.FullyQualifiedNamespace))
         {
-            _logger.LogWarning("ServiceBus:ConnectionString is empty; outbox dispatcher disabled. Batches stay in the outbox.");
+            _logger.LogWarning("ServiceBus:ConnectionString and FullyQualifiedNamespace are empty; outbox dispatcher disabled. Batches stay in the outbox.");
             return;
         }
 
-        await using var client = new ServiceBusClient(_options.ConnectionString, new ServiceBusClientOptions
+        var clientOptions = new ServiceBusClientOptions
         {
             TransportType = Enum.Parse<ServiceBusTransportType>(_options.TransportType, ignoreCase: true),
             // Fail a blocked/slow send in seconds so the outbox records the error and retries,
             // instead of the dispatcher silently hanging on the default 60s x 3 retry.
             RetryOptions = new ServiceBusRetryOptions { TryTimeout = TimeSpan.FromSeconds(15), MaxRetries = 2 }
-        });
+        };
+        await using var client = useConnectionString
+            ? new ServiceBusClient(_options.ConnectionString, clientOptions)
+            : new ServiceBusClient(_options.FullyQualifiedNamespace, new Azure.Identity.DefaultAzureCredential(), clientOptions);
         await using var sender = client.CreateSender(_options.QueueName);
 
         while (!stoppingToken.IsCancellationRequested)

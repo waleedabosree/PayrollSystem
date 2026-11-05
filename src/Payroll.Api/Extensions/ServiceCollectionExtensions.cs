@@ -32,8 +32,13 @@ public static class ServiceCollectionExtensions
         // ---- Blob Storage + Service Bus (outbox relay) ----
         services.Configure<BlobStorageOptions>(configuration.GetSection(BlobStorageOptions.Section));
         services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.Section));
-        services.AddSingleton(sp => new BlobServiceClient(
-            sp.GetRequiredService<IOptions<BlobStorageOptions>>().Value.ConnectionString));
+        services.AddSingleton(sp =>
+        {
+            var o = sp.GetRequiredService<IOptions<BlobStorageOptions>>().Value;
+            return !string.IsNullOrWhiteSpace(o.ConnectionString)
+                ? new BlobServiceClient(o.ConnectionString)
+                : new BlobServiceClient(new Uri($"https://{o.AccountName}.blob.core.windows.net"), new Azure.Identity.DefaultAzureCredential());
+        });
         services.AddSingleton<IPayrollBlobStore, PayrollBlobStore>();
         services.AddHostedService<OutboxDispatcher>();
 
@@ -61,6 +66,41 @@ public static class ServiceCollectionExtensions
                 document.Info.Description =
                     "Upload, validate and track payroll files. Authentication is intentionally " +
                     "absent in this phase; see docs/ARCHITECTURE.md.";
+                return Task.CompletedTask;
+            });
+
+            // The action reads the form manually (Request.ReadFormAsync) so the generator sees no
+            // parameters; declare the multipart body explicitly so Swagger UI shows a file picker.
+            options.AddOperationTransformer((operation, context, _) =>
+            {
+                if (context.Description.ActionDescriptor.RouteValues.TryGetValue("action", out var action)
+                    && action == "Upload")
+                {
+                    operation.RequestBody = new Microsoft.OpenApi.Models.OpenApiRequestBody
+                    {
+                        Required = true,
+                        Content =
+                        {
+                            ["multipart/form-data"] = new Microsoft.OpenApi.Models.OpenApiMediaType
+                            {
+                                Schema = new Microsoft.OpenApi.Models.OpenApiSchema
+                                {
+                                    Type = "object",
+                                    Required = new HashSet<string> { "file", "entityId" },
+                                    Properties =
+                                    {
+                                        ["file"] = new() { Type = "string", Format = "binary", Description = "Payroll CSV file." },
+                                        ["entityId"] = new() { Type = "string", Description = "Entity the payroll belongs to." }
+                                    }
+                                },
+                                Encoding =
+                                {
+                                    ["file"] = new Microsoft.OpenApi.Models.OpenApiEncoding { ContentType = "text/csv" }
+                                }
+                            }
+                        }
+                    };
+                }
                 return Task.CompletedTask;
             });
         });
