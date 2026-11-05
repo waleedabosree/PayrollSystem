@@ -1,0 +1,6 @@
+EmployeeId,EmployeeName,PayPeriodStart,PayPeriodEnd,RegularHours,OvertimeHours,HourlyRate,Deductions,Currency
+E-001,Jane Doe,2026-01-01,2026-01-31,160,10,50.00,100.00,USD
+E-002,John Smith,2026-01-01,2026-01-31,168,4,42.50,180.75,USD
+E-003,Amina Yusuf,2026-01-01,2026-01-31,152,0,61.25,0.00,USD
+E-004,"Doe, Robert",2026-01-01,2026-01-31,160,16,38.00,95.50,USD
+E-005,Priya Nair,2026-01-01,2026-01-31,176,12,47.90,210.00,USD

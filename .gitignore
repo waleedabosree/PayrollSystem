@@ -1,0 +1,36 @@
+# ---- Build output ----
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+artifacts/
+*.user
+*.suo
+*.cache
+
+# ---- IDE ----
+.vs/
+.idea/
+.vscode/*
+!.vscode/settings.json
+
+# ---- Secrets (never commit) ----
+**/local.settings.json
+**/appsettings.*.local.json
+.env
+.env.*
+
+# ---- Test results ----
+TestResults/
+*.trx
+coverage*
+
+# ---- Node / Angular ----
+node_modules/
+.angular/
+dist/
+
+# ---- Local data ----
+local/data/
+*.mdf
+*.ldf
+samples/*.tmp.xlsx

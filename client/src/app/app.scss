@@ -1,0 +1,12 @@
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 14px 24px;
+  background: #0f172a;
+  color: #fff;
+}
+.brand { color: #fff; font-weight: 700; font-size: 18px; text-decoration: none; }
+.env { font-size: 12px; color: #fbbf24; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }

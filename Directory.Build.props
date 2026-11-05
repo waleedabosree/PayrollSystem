@@ -1,0 +1,26 @@
+<Project>
+
+  <!--
+    Repo-wide build conventions.
+    TFM stays per-project because Azure Functions has its own SDK requirements;
+    everything else that should be uniform lives here.
+  -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <RootNamespace>$(MSBuildProjectName)</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup Label="Local, environment-specific secrets never belong in source control">
+    <None Remove="**/appsettings.*.local.json" />
+    <Content Remove="**/appsettings.*.local.json" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,63 @@
+# Local development dependencies for the Payroll System.
+#
+# Local-first strategy: nearly all iteration happens here, so cloud spend stays at zero
+# while the architecture is still moving. See docs/PHASE_ZERO.md.
+#
+#   docker compose -f local/docker-compose.yml up -d
+#   docker compose -f local/docker-compose.yml down            (keeps data)
+#   docker compose -f local/docker-compose.yml down -v         (destroys data)
+
+name: payroll-local
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Azure SQL Database stand-in: a real SQL Server, not a shim.
+  # Using the real engine locally means EF migrations, decimal precision, unique
+  # indexes and date semantics behave identically to Azure -- the alternative
+  # (EF InMemory) would happily accept duplicates that SQL Server rejects,
+  # which is the one thing our idempotency design depends on NOT happening.
+  # ---------------------------------------------------------------------------
+  sqlserver:
+    container_name: payroll-sql
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Payroll_Dev_2026!"
+      MSSQL_PID: "Developer"
+      MSSQL_MEMORY_LIMIT_MB: "1536"
+    volumes:
+      - payroll-sql-data:/var/opt/mssql
+      # Persist data separately from container lifetime so `docker compose down`
+      # does not silently destroy your schema on an unattended clean-up.
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/1433' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Azurite: Microsoft's official Azure Storage emulator (Blob / Queue / Table).
+  # Wire-compatible with the Azure SDK, so the very same upload code runs against
+  # it unchanged. Handles authentication bonds, leases and conditional requests
+  # that a fake would not -- matters as soon as we compare ETags in Phase 2.
+  # ---------------------------------------------------------------------------
+  azurite:
+    container_name: payroll-azurite
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    restart: unless-stopped
+    ports:
+      - "10000:10000"   # Blob
+      - "10001:10001"   # Queue
+      - "10002:10002"   # Table
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck"
+    volumes:
+      - azurite-data:/data
+
+volumes:
+  payroll-sql-data:
+  azurite-data:

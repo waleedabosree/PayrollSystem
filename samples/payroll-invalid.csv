@@ -1,0 +1,7 @@
+EmployeeId,EmployeeName,PayPeriodStart,PayPeriodEnd,RegularHours,OvertimeHours,HourlyRate,Deductions,Currency
+E-001,Jane Doe,2026-01-01,2026-01-31,160,10,50.00,100.00,USD
+E-002,Broken Date,not-a-date,2026-01-31,168,4,42.50,180.75,USD
+E-003,Inverted Period,2026-02-01,2026-01-31,152,0,61.25,0.00,USD
+E-004,Huge Deductions,2026-01-01,2026-01-31,160,16,38.00,999999.00,USD
+E-501,Hours Out Of Range,2026-01-01,2026-01-31,9999,12,47.90,210.00,USD
+E-001,Jane Doe,2026-01-01,2026-01-31,160,10,50.00,100.00,EURO
