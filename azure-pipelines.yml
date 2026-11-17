@@ -1,0 +1,88 @@
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-latest
+
+# Define these in Pipelines > Library > variable group "payroll-dev" (or pipeline variables):
+#   azureServiceConnection, apiAppName, functionAppName, PAYROLL_DB_CONNECTION (secret), swaToken (secret)
+variables:
+  - group: payroll-dev
+  - name: buildConfiguration
+    value: Release
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Backend
+        steps:
+          - task: UseDotNet@2
+            inputs:
+              version: 9.0.x
+          - script: dotnet restore
+            displayName: Restore
+          - script: dotnet build --no-restore -c $(buildConfiguration)
+            displayName: Build
+          - script: dotnet test --no-build -c $(buildConfiguration) --logger trx --results-directory $(Agent.TempDirectory)/tests
+            displayName: Test
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: VSTest
+              testResultsFiles: '$(Agent.TempDirectory)/tests/*.trx'
+          - script: dotnet publish src/Payroll.Api -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/api
+            displayName: Publish API
+          - script: dotnet publish src/Payroll.Functions -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/functions
+            displayName: Publish Functions
+          # Pinned to the EF Core package version in Directory.Packages.props; newer tool versions need a newer runtime.
+          - script: |
+              dotnet tool install --global dotnet-ef --version 9.0.7
+              export PATH="$PATH:$HOME/.dotnet/tools"
+              dotnet ef migrations bundle --project src/Payroll.Api --self-contained -r linux-x64 -o $(Build.ArtifactStagingDirectory)/efbundle --force
+            displayName: Build EF migration bundle
+          - publish: $(Build.ArtifactStagingDirectory)
+            artifact: drop
+
+      - job: Client
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: 22.x
+          - script: npm ci && npm run build
+            workingDirectory: client
+            displayName: Build Angular client
+
+  - stage: DeployDev
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: Deploy
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: drop
+                - script: |
+                    chmod +x $(Pipeline.Workspace)/drop/efbundle
+                    $(Pipeline.Workspace)/drop/efbundle --connection "$(PAYROLL_DB_CONNECTION)"
+                  displayName: Apply DB migrations
+                - task: AzureWebApp@1
+                  displayName: Deploy API
+                  inputs:
+                    azureSubscription: $(azureServiceConnection)
+                    appName: $(apiAppName)
+                    package: $(Pipeline.Workspace)/drop/api
+                - task: AzureFunctionApp@2
+                  displayName: Deploy Functions
+                  inputs:
+                    connectedServiceNameARM: $(azureServiceConnection)
+                    appType: functionApp
+                    appName: $(functionAppName)
+                    package: $(Pipeline.Workspace)/drop/functions
