@@ -37,6 +37,12 @@ public class PayrollBatchesController : ControllerBase
         _logger = logger;
     }
 
+    
+    public async Task<IActionResult> IamHealthy()
+    {
+        return Ok("Iam Healthy");
+    }
+
     /// <summary>
     /// Validates a payroll CSV and records a new batch.
     /// Returns 202 with the BatchId and CorrelationId for the client to poll against.
