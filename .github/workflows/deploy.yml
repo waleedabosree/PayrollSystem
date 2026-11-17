@@ -37,7 +37,8 @@ jobs:
       # Migrations run before the new code goes live; bundle needs no SDK on the target.
       - name: Build EF migration bundle
         run: |
-          dotnet tool install --global dotnet-ef
+          # Must match the EF Core package version in Directory.Packages.props; an unpinned install pulls a newer, incompatible runtime.
+          dotnet tool install --global dotnet-ef --version 9.0.7
           dotnet ef migrations bundle --project src/Payroll.Api --self-contained -r linux-x64 -o ./efbundle --force
       - name: Apply migrations
         run: ./efbundle --connection "${{ secrets.PAYROLL_DB_CONNECTION }}"
