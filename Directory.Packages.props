@@ -1,5 +1,4 @@
 <Project>
-
   <!--
     Central Package Management.
     All NuGet versions live here so a framework migration (net9.0 -> net10.0)
@@ -8,14 +7,14 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-
   <ItemGroup Label="Application framework (pinned to installed runtime 9.0.7)">
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi"                            Version="9.0.7" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.7" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational"                Version="9.0.7" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer"                 Version="9.0.7" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design"                    Version="9.0.7" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory"                  Version="9.0.7" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.7" />
     <!--
       CsvHelper is deliberately pinned BELOW the latest (34.0.0, released 20 Oct 2026).
       v34 is a ground-up rewrite: CsvConfiguration, CsvParser and the documented options API
@@ -24,31 +23,26 @@
       trade for this project. v33.1.0 is stable, widely understood, and targets net8.0/net9.0.
       Revisit v34 deliberately, not by default.
     -->
-    <PackageVersion Include="CsvHelper"                                               Version="33.1.0" />
+    <PackageVersion Include="CsvHelper" Version="33.1.0" />
   </ItemGroup>
-
   <ItemGroup Label="Azure SDK">
-    <PackageVersion Include="Azure.Storage.Blobs"                                     Version="12.30.1" />
+    <!-- Pinned to versions whose dependencies (System.Text.Json, Microsoft.Extensions.*) stay on 8.x/9.x; newer Azure.Core pulls 10.x assemblies that the net9.0 runtime (and EF tools) cannot load. -->
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.25.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.1" />
-    <PackageVersion Include="Azure.Identity"                                          Version="1.21.0" />
-    <PackageVersion Include="Azure.Messaging.ServiceBus"                              Version="7.21.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.14.2" />
+    <PackageVersion Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
   </ItemGroup>
-
-  <ItemGroup Label="Azure Functions isolated worker
-                    NOTE: current IDs are dot-separated (Microsoft.Azure.Functions.*).
-                    The old MicrosoftAzureFunctions* spellings no longer exist on NuGet.">
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker"                        Version="2.52.0" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk"                    Version="2.1.0" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus"  Version="5.24.0" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http"        Version="3.3.0" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.ApplicationInsights"    Version="2.51.0" />
+  <ItemGroup Label="Azure Functions isolated worker&#xA;                    NOTE: current IDs are dot-separated (Microsoft.Azure.Functions.*).&#xA;                    The old MicrosoftAzureFunctions* spellings no longer exist on NuGet.">
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="2.52.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.1.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" Version="5.24.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.51.0" />
   </ItemGroup>
-
   <ItemGroup Label="Testing">
-    <PackageVersion Include="Microsoft.NET.Test.Sdk"     Version="17.12.0" />
-    <PackageVersion Include="xunit"                      Version="2.9.2" />
-    <PackageVersion Include="xunit.runner.visualstudio"  Version="2.8.2" />
-    <PackageVersion Include="coverlet.collector"         Version="6.0.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
   </ItemGroup>
-
 </Project>

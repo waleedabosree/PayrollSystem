@@ -1,0 +1,86 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# OIDC login to Azure; no long-lived secrets.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  DOTNET_VERSION: 9.0.x
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet test -c Release
+
+  deploy-api:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet publish src/Payroll.Api -c Release -o ./publish/api
+
+      # Migrations run before the new code goes live; bundle needs no SDK on the target.
+      - name: Build EF migration bundle
+        run: |
+          dotnet tool install --global dotnet-ef
+          dotnet ef migrations bundle --project src/Payroll.Api --self-contained -r linux-x64 -o ./efbundle --force
+      - name: Apply migrations
+        run: ./efbundle --connection "${{ secrets.PAYROLL_DB_CONNECTION }}"
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_API_APP_NAME }}
+          package: ./publish/api
+
+  deploy-functions:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet publish src/Payroll.Functions -c Release -o ./publish/functions
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ vars.AZURE_FUNCTION_APP_NAME }}
+          package: ./publish/functions
+
+  deploy-client:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: client
+          output_location: dist/client/browser
